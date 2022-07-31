@@ -1,0 +1,53 @@
+function [regions, im_colored] = segment_image(im_boundaries)
+
+[l, c] = size(im_boundaries);
+remaining_indices = (1:1:l*c);
+regions = {};
+
+while(~isempty(remaining_indices))
+    % pick a good index to initialize the region
+    rand_i = randi(size(remaining_indices, 2), 1);
+    new_index = remaining_indices(rand_i);
+    while(im_boundaries(new_index) ==1 && ~isempty(remaining_indices))
+        remaining_indices(remaining_indices == rand_i) = [];
+        rand_i = randi(size(remaining_indices, 2), 1);
+    end
+    new_index = remaining_indices(rand_i);
+    [x, y] = ind2sub(size(im_boundaries), new_index);
+    % region growing
+    if isempty(remaining_indices)
+        break;
+    else
+        % compute the region
+        J=regiongrowing(im_boundaries,x,y,0.1);
+        region = find(J);
+        regions{1, end+1} = region;
+        % mark the pixels of the region as visited
+        K = ismember(remaining_indices, region');
+        remaining_indices(K) = [];
+    end
+end
+
+% color the segmented image
+    % get a color for each region
+nb_colors = length(regions); 
+switch nb_colors
+    case 1
+        colors = 0;
+    otherwise
+        step = fix(255/(nb_colors-1));
+        colors = (0:step:255);
+end
+
+im_indices = (1:1:size(im_boundaries, 1)*size(im_boundaries, 2));
+im_segmented_flatten = ones(1, size(im_boundaries, 1)*size(im_boundaries, 2));
+for k=1:length(regions)
+    T = ismember(im_indices, regions{k}');
+    im_segmented_flatten(T) = colors(k);
+end
+
+im_colored = reshape(im_segmented_flatten, size(im_boundaries, 1), size(im_boundaries, 2));
+figure; imshow(im_colored, []);
+
+end
+

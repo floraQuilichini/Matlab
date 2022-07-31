@@ -1,0 +1,135 @@
+function [stacked_boundaries, additional_ending_leaves, ending_chains] = extend_boundaries(stacked_boundaries, additional_ending_leaves, ending_chains, ind1, ind2)
+k1 =0;
+k2 = 0;
+for k =1:length(stacked_boundaries)
+    if (stacked_boundaries{1, k}.leaf_end == ind1 || stacked_boundaries{1, k}.leaf_init == ind1) || (ismember(ind1, stacked_boundaries{1, k}.prev) || ismember(ind1, stacked_boundaries{1, k}.sec))
+        k1 = k;
+        if k2
+            break;
+        end
+    end
+    if (stacked_boundaries{1, k}.leaf_end == ind2 || stacked_boundaries{1, k}.leaf_init == ind2) || (ismember(ind2, stacked_boundaries{1, k}.prev) || ismember(ind2, stacked_boundaries{1, k}.sec))
+        k2 = k;
+        if k1
+            break;
+        end
+    end
+end
+
+if k1 == k2 
+
+if ~(k2 ==0 && k1 ==0)
+    if k2 ==0 || k1 ==0
+        if k2 ==0 
+            if ismember(ind2, additional_ending_leaves)
+                if stacked_boundaries{1, k1}.leaf_end == ind1
+                    stacked_boundaries{1, k1}.list(end+1) = ind2;
+                    stacked_boundaries{1, k1}.prev = ind1;
+                    stacked_boundaries{1, k1}.leaf_end = ind2;
+                    %additional_ending_leaves(additional_ending_leaves == ind1) = [];
+                    additional_ending_leaves(additional_ending_leaves == ind2) = [];
+                    %additional_ending_leaves(end+1) = ind1;
+                else
+                    stacked_boundaries{1, k1}.list = [ind2, stacked_boundaries{1, k1}.list];
+                    stacked_boundaries{1, k1}.sec = ind1;
+                    stacked_boundaries{1, k1}.leaf_init = ind2;
+                    %additional_ending_leaves(additional_ending_leaves == ind1) = [];
+                    additional_ending_leaves(additional_ending_leaves == ind2) = [];
+                    %additional_ending_leaves(end+1) = ind1;
+                end
+    %             if isfield(stacked_boundaries{1, k1}, 'ext1')
+    %                 if stacked_boundaries{1, k1}.ext1 ~= ind2
+    %                     stacked_boundaries{1, k1}.leaf_init = ind2;
+    %                     stacked_boundaries{1, k1}.leaf_end = ind2;
+    %         %                 if stacked_boundaries.leaf_init == ind1 
+    %         %                     stacked_boundaries{1, k1}.leaf_end = ind2;
+    %         %                 else
+    %         %                     stacked_boundaries{1, k1}.leaf_init = ind2;
+    %         %                 end
+    %                 end
+    %             else
+    %                 stacked_boundaries{1, k1}.ext1 = ind2;
+    %             end
+            else
+                ending_chains(end+1:end+2) = [ind1, ind2];
+            end
+        else
+            if ismember(ind1, additional_ending_leaves)
+                if stacked_boundaries{1, k2}.leaf_end == ind2
+                    stacked_boundaries{1, k2}.list(end+1) = ind1;
+                    stacked_boundaries{1, k2}.prev = ind2;
+                    stacked_boundaries{1, k2}.leaf_end = ind1;
+                    additional_ending_leaves(additional_ending_leaves == ind1) = [];
+                    %additional_ending_leaves(additional_ending_leaves == ind2) = [];
+                    %additional_ending_leaves(end+1) = ind2;
+                else
+                    stacked_boundaries{1, k2}.list = [ind1, stacked_boundaries{1, k2}.list];
+                    stacked_boundaries{1, k2}.sec = ind2;
+                    stacked_boundaries{1, k2}.leaf_init = ind1;
+                    additional_ending_leaves(additional_ending_leaves == ind1) = [];
+                    %additional_ending_leaves(additional_ending_leaves == ind2) = [];
+                    %additional_ending_leaves(end+1) = ind2;
+                end
+    %             if isfield(stacked_boundaries{1, k2}, 'ext1')
+    %                 if stacked_boundaries{1, k2}.ext1 ~= ind1
+    %                     stacked_boundaries{1, k2}.leaf_init = ind1;
+    %                     stacked_boundaries{1, k2}.leaf_end = ind1;
+    %                 end
+    %             else
+    %                 stacked_boundaries{1, k2}.ext1 = ind1;
+    %             end
+            else
+                ending_chains(end+1:end+2) = [ind1, ind2];
+                additional_ending_leaves(end+1:end+2) = [ind1, ind2];
+            end
+        end
+    else
+%         additional_ending_leaves(additional_ending_leaves == ind1) = [];
+%         additional_ending_leaves(additional_ending_leaves == ind2) = [];
+        if stacked_boundaries{1, k2}.leaf_init == ind2 || ismember(ind2, stacked_boundaries{1, k2}.sec)
+            if stacked_boundaries{1, k1}.leaf_end == ind1 || ismember(ind1, stacked_boundaries{1, k1}.prev)
+                additional_ending_leaves(end+1:end+2) = [stacked_boundaries{1, k2}.leaf_init, stacked_boundaries{1, k1}.leaf_end];
+                list1 = stacked_boundaries{1, k1}.list;
+                list2 = stacked_boundaries{1, k2}.list;
+                new_list = [list1, list2];
+                stacked_boundaries{1, k1}.list = new_list;
+                stacked_boundaries{1, k1}.leaf_end = stacked_boundaries{1, k2}.leaf_end;
+                stacked_boundaries{1, k1}.prev = stacked_boundaries{1, k2}.prev;
+                stacked_boundaries(k2) = [];
+            else
+                additional_ending_leaves(end+1:end+2) = [stacked_boundaries{1, k2}.leaf_init, stacked_boundaries{1, k1}.leaf_init];
+                list1 = stacked_boundaries{1, k1}.list;
+                list2 = stacked_boundaries{1, k2}.list;
+                new_list = [flip( list2), list1];
+                stacked_boundaries{1, k1}.list = new_list;
+                stacked_boundaries{1, k1}.leaf_init = stacked_boundaries{1, k2}.leaf_end;
+                stacked_boundaries{1, k1}.sec = stacked_boundaries{1, k2}.prev;
+                stacked_boundaries(k2) = [];
+
+            end
+        else
+            if stacked_boundaries{1, k1}.leaf_end == ind1 || ismember(ind1, stacked_boundaries{1, k1}.prev)
+                additional_ending_leaves(end+1:end+2) = [stacked_boundaries{1, k2}.leaf_end, stacked_boundaries{1, k1}.leaf_end];
+                list1 = stacked_boundaries{1, k1}.list;
+                list2 = stacked_boundaries{1, k2}.list;
+                new_list = [list1, flip(list2)];
+                stacked_boundaries{1, k1}.list = new_list;
+                stacked_boundaries{1, k1}.leaf_end = stacked_boundaries{1, k2}.leaf_init;
+                stacked_boundaries{1, k1}.prev = stacked_boundaries{1, k2}.sec;
+                stacked_boundaries(k2) = [];
+            else
+                additional_ending_leaves(end+1:end+2) = [stacked_boundaries{1, k2}.leaf_end, stacked_boundaries{1, k1}.leaf_init];
+                list1 = stacked_boundaries{1, k1}.list;
+                list2 = stacked_boundaries{1, k2}.list;
+                new_list = [list2, list1];
+                stacked_boundaries{1, k1}.list = new_list;
+                stacked_boundaries{1, k1}.leaf_init = stacked_boundaries{1, k2}.leaf_init;
+                stacked_boundaries{1, k1}.sec = stacked_boundaries{1, k2}.sec;
+                stacked_boundaries(k2) = [];
+            end
+        end
+    end
+
+end  
+end
+

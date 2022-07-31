@@ -1,0 +1,33 @@
+function [dist] = compute_projected_depthmap_distance(depthmap_ref,depthmap_query)
+% project the depthmaps in 3D space
+[pc_ref, r_indices_ref, s_indices_ref] = project_depthmap(depthmap_ref, [128, 128], [319.5, 239.5], 525.0, 0.0,1000.0); 
+[pc_query, r_indices_query, s_indices_query] = project_depthmap(depthmap_query, [128, 128], [319.5, 239.5], 525.0, 0.0,1000.0);
+
+Liq = ismember(r_indices_query, s_indices_ref)';
+Lir = ismember(r_indices_ref, s_indices_query)';
+
+
+M = repmat(Liq, 1, 3);
+N = repmat(Lir, 1, 3);
+M_ = repmat(~Liq, 1, 3);
+dist = sum(sqrt(sum( reshape(pc_query(M), [], 3).^(2), 2))) + sum(sqrt(sum( reshape(pc_ref(N), [], 3).^(2), 2)));
+
+
+
+dist = 0.0; 
+
+q_ind = r_indices_query(Liq);
+r_ind = r_indices_ref(Lir);
+for i=1:length(q_ind) 
+    dist = dist + sqrt(sum( pc_query(q_ind(i), :).^(2)));
+end
+
+for i=1:length(r_ind) 
+    dist = dist + sqrt(sum( pc_ref(r_ind(i), :).^(2)));
+end
+
+cum_ind = r_indices_ref;
+cum_ind(Lir) = [];
+for i=1:length(r_indices_ref) 
+    dist = dist + sqrt(sum( (pc_ref(cum_ind(i), :) - pc_query(cum_ind(i), :)).^(2)));
+end

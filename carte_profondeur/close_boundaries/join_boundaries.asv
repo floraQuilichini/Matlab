@@ -1,0 +1,93 @@
+function bw_closed = join_boundaries(im_bw, stacked_boundaries, additional_ending_leaves, varargin)
+
+switch length(varargin)
+    case 0
+        max_dist = 2*sqrt(2);
+        min_dist = sqrt(2);
+    case 1 
+        max_dist = varargin{:};
+        min_dist = 0;
+    case 2
+        max_dist = varargin{1};
+        min_dist = varargin{2};
+    otherwise
+        error('wrong number of arguments');
+end
+        
+    
+
+bw_closed = im_bw;
+sz = [size(im_bw, 1), size(im_bw, 2)];
+endings = zeros(1, 2*length(stacked_boundaries)+ length(additional_ending_leaves));
+for i=1:2:2*length(stacked_boundaries)
+    endings(i) = stacked_boundaries{1, round(i/2)}.leaf_init;
+    endings(i+1) = stacked_boundaries{1, round(i/2)}.leaf_end;
+end
+endings(2*length(stacked_boundaries)+1:end) = additional_ending_leaves;
+endings = unique(endings);
+
+unclosed_endings = [];
+
+while length(stacked_boundaries)>1 && max_dist < 20
+    ending_chains = [];  
+    i=1;
+    while i< length(stacked_boundaries)
+        list_extremities = [stacked_boundaries{1, i}.leaf_init , stacked_boundaries{1, i}.leaf_end];
+        [dists, inds, repeated_list_extremities] = compute_distance_from_other_lists(list_extremities, endings, im_bw);
+        inds(dists < min_dist | dists >= max_dist) = [];
+        if ~ isempty(inds)
+            repeated_list_extremities(dists < min_dist | dists >= max_dist) = [];
+            if sum(ismember(inds, stacked_boundaries{1, i}.list))
+                bool_inds = ismember(inds, stacked_boundaries{1, i}.list);
+                inds2 = inds(bool_inds);
+                c = 1;
+                for m=1:length(bool_inds)
+                    if bool_inds(m)
+                        if (inds2(c)== stacked_boundaries{1, i}.leaf_init) || (inds2(c)== stacked_boundaries{1, i}.leaf_end)
+                            bool_inds(m) = 0;
+                            break;
+                        else
+                            c = c+1;
+                        end
+                    end
+                end
+                repeated_list_extremities(bool_inds) = [];
+                inds(bool_inds) = [];
+%               repeated_list_extremities(ismember(inds, stacked_boundaries{1, i}.list) = [];
+%               inds(ismember(inds, stacked_boundaries{1, i}.list)) = [];
+            end
+            if ~isempty(inds)
+                for k = 1:length(repeated_list_extremities)
+                    [row, col] = ind2sub(sz, repeated_list_extremities(k));
+                    [closest_point_row, closest_point_col] = ind2sub(sz, inds(k));
+                    bw_closed = linept(bw_closed, row, col, closest_point_row, closest_point_col);
+                    [stacked_boundaries, additional_ending_leaves, ending_chains] = extend_boundaries(stacked_boundaries, additional_ending_leaves, ending_chains, repeated_list_extremities(k), sub2ind(sz, closest_point_row, closest_point_col));
+                end
+          
+               if stacked_boundaries{1, i}.leaf_init == stacked_boundaries{1, i}.leaf_end
+                   additional_ending_leaves(end+1) = stacked_boundaries{1, i}.leaf_end;
+                   stacked_boundaries(i) = [];
+               else 
+                   if (ismember(stacked_boundaries{1, i}.leaf_init, ending_chains) && ismember(stacked_boundaries{1, i}.leaf_end, ending_chains)) || (ismember(stacked_boundaries{1, i}.leaf_init, ending_chains) || ismember(stacked_boundaries{1, i}.leaf_end, ending_chains) && length(unique(repeated_list_extremities))==1)
+                       unclosed_endings(end+1, 1) = stacked_boundaries{1, i}.leaf_init;
+                       unclosed_endings(end+1, 2) = stacked_boundaries{1, i}.leaf_end;
+                       stacked_boundaries(i) = [];
+                   end
+               end
+            else
+                i = i+1;
+            end
+        else
+            i = i+1;
+        end
+
+    end
+    min_dist = max_dist;
+    max_dist = max_dist +sqrt(2);
+end
+
+for k = 1:size(unclosed_endings, 1)
+    
+
+end
+
